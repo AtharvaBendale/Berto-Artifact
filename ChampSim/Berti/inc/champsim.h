@@ -84,6 +84,12 @@
 #define FILL_DRC   8
 #define FILL_DRAM 16
 
+// Data Source Level
+#define FROM_L2 (1 << 0)
+#define FROM_LLC (1 << 1)
+#define FROM_DRAM (1 << 2)
+#define SOURCE_LEVEL_MASK (FROM_L2 | FROM_LLC | FROM_DRAM)
+
 //Context-switch
 #define CONTEXT_SWITCH_FILE_SIZE 20
 

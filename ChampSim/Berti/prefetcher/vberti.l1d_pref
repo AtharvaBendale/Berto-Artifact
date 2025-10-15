@@ -220,14 +220,14 @@ void shadow_cache_init(uint32_t cpu)
         for (uint8_t ii = 0; ii < L1D_WAY; ii++)
         {
             scache[cpu][i][ii].addr = 0;
-            scache[cpu][i][ii].lat  = 0;
+            scache[cpu][i][ii].from  = 0;
             scache[cpu][i][ii].pf   = 0;
         }
     }
 }
 
 uint8_t shadow_cache_add(uint32_t cpu, uint32_t set, uint32_t way, 
-        uint64_t line_addr, uint8_t pf, uint64_t latency)
+        uint64_t line_addr, uint8_t pf, uint8_t from)
 {
     /*
      * Add block to shadow cache
@@ -241,7 +241,7 @@ uint8_t shadow_cache_add(uint32_t cpu, uint32_t set, uint32_t way,
      */
     scache[cpu][set][way].addr = line_addr;
     scache[cpu][set][way].pf   = pf;
-    scache[cpu][set][way].lat  = latency;
+    scache[cpu][set][way].from  = from;
     return scache[cpu][set][way].pf;
 }
 
@@ -334,7 +334,10 @@ uint8_t shadow_cache_latency(uint32_t cpu, uint64_t line_addr)
     {
         for (uint32_t ii = 0; ii < L1D_WAY; ii++)
         {
-            if (scache[cpu][i][ii].addr == line_addr) return scache[cpu][i][ii].lat;
+            if (scache[cpu][i][ii].addr == line_addr) {
+                if (scache[cpu][i][ii].from == FROM_DRAM) return dram_lat;
+                else return 0;
+            }
         }
     }
     assert(0);
@@ -823,6 +826,12 @@ void CACHE::l1d_prefetcher_cache_fill(uint64_t v_addr, uint64_t addr,
         uint32_t set, uint32_t way, uint8_t prefetch, uint64_t v_evicted_addr, 
         uint64_t evicted_addr, uint32_t metadata_in)
 {
+    uint32_t from = metadata_in & SOURCE_LEVEL_MASK;
+
+    if (from != FROM_L2 && from != FROM_LLC && from != FROM_DRAM) {
+        assert(0);
+    }
+
     uint64_t line_addr = (v_addr >> LOG2_BLOCK_SIZE); // Line addr
     uint64_t line_evicted = (v_evicted_addr >> LOG2_BLOCK_SIZE); // Line addr
 
@@ -833,8 +842,10 @@ void CACHE::l1d_prefetcher_cache_fill(uint64_t v_addr, uint64_t addr,
 
     if (latency > LAT_MASK) latency = 0;
 
+    dram_lat = ( (DRAM_LATENCY_MOVING_AVERAGE_PARAM - 1) * dram_lat + latency ) >> 3;
+
     // Add to the shadow cache
-    shadow_cache_add(cpu, set, way, line_addr, prefetch, latency);
+    shadow_cache_add(cpu, set, way, line_addr, prefetch, from);
 
     if (latency != 0 && !prefetch)
     {

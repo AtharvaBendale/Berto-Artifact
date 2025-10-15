@@ -1802,6 +1802,8 @@ if((cache_type == IS_L1I || cache_type == IS_L1D) && reads_ready.size() == 0)
                     }
                     else if(cache_type == IS_L2C)
                     {
+                        RQ.entry[index].pf_metadata &= ~SOURCE_LEVEL_MASK;
+                        RQ.entry[index].pf_metadata |= FROM_L2;
                         if(RQ.entry[index].send_both_cache)
                         {
                             upper_level_icache[read_cpu]->return_data(&RQ.entry[index]);
@@ -1821,6 +1823,8 @@ if((cache_type == IS_L1I || cache_type == IS_L1D) && reads_ready.size() == 0)
                     }
                     else	
                     {
+                        RQ.entry[index].pf_metadata &= ~SOURCE_LEVEL_MASK;
+                        RQ.entry[index].pf_metadata |= FROM_LLC;
                         if (RQ.entry[index].instruction) 
                         {
                             RQ.entry[index].data = block[set][way].data;
@@ -2534,6 +2538,8 @@ if((cache_type == IS_L1I || cache_type == IS_L1D) && reads_ready.size() == 0)
                             }
                             else if(fill_level == FILL_L2)
                             {
+                                PQ.entry[index].pf_metadata &= ~SOURCE_LEVEL_MASK;
+                                PQ.entry[index].pf_metadata |= FROM_L2;
                                 if(PQ.entry[index].fill_l1i)
                                 {
                                     PQ.entry[index].data = block[set][way].data;
@@ -2547,6 +2553,8 @@ if((cache_type == IS_L1I || cache_type == IS_L1D) && reads_ready.size() == 0)
                             }
                             else
                             {
+                                PQ.entry[index].pf_metadata &= ~SOURCE_LEVEL_MASK;
+                                PQ.entry[index].pf_metadata |= FROM_LLC;
                                 if (PQ.entry[index].instruction)
                                 {
                                     PQ.entry[index].data = block[set][way].data; 

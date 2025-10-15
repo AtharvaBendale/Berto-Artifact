@@ -461,6 +461,8 @@ void MEMORY_CONTROLLER::process(PACKET_QUEUE *queue)
                 cout << " current_cycle: " << current_core_cycle[op_cpu] << " event_cycle: " << queue->entry[request_index].event_cycle << endl; });
 
                 // send data back to the core cache hierarchy
+                queue->entry[request_index].pf_metadata &= ~SOURCE_LEVEL_MASK;
+                queue->entry[request_index].pf_metadata |= FROM_DRAM;
                 upper_level_dcache[op_cpu]->return_data(&queue->entry[request_index]);
 
                 if (bank_request[op_channel][op_rank][op_bank].row_buffer_hit)
@@ -547,6 +549,8 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
 {
     // simply return read requests with dummy response before the warmup
     if (all_warmup_complete < NUM_CPUS) {
+        packet->pf_metadata &= ~SOURCE_LEVEL_MASK;
+        packet->pf_metadata |= FROM_DRAM;
         if (packet->instruction) 
             upper_level_icache[packet->cpu]->return_data(packet);
         else // data
@@ -564,6 +568,8 @@ int MEMORY_CONTROLLER::add_rq(PACKET *packet)
         //if (packet->fill_level < fill_level) {
 
             packet->data = WQ[channel].entry[wq_index].data;
+            packet->pf_metadata &= ~SOURCE_LEVEL_MASK;
+            packet->pf_metadata |= FROM_DRAM;
             if (packet->instruction) 
                 upper_level_icache[packet->cpu]->return_data(packet);
             else // data

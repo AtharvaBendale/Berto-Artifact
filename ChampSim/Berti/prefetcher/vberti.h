@@ -10,6 +10,7 @@
 #include <queue>
 #include <cmath>
 #include <map>
+#include <cassert>
 
 #include <stdlib.h>
 #include <time.h>
@@ -79,7 +80,7 @@ typedef struct VBerti {
 
 typedef struct shadow_cache {
     uint64_t addr; // IP Tag
-    uint64_t lat;  // Latency
+    uint8_t from;  // from where this block was fetche after a prefetch or a miss
     uint8_t  pf;   // Is this accesed
 } shadow_cache_t; // This struct is the vberti table
 
@@ -95,6 +96,10 @@ std::queue<uint64_t> vbertit_queue[NUM_CPUS];
 // Auxiliar pointers
 history_table_t *history_pointers[NUM_CPUS][HISTORY_TABLE_SET];
 
+uint64_t dram_lat = 0;
+#define DRAM_LATENCY_MOVING_AVERAGE_PARAM_BASE 3
+#define DRAM_LATENCY_MOVING_AVERAGE_PARAM (1 << DRAM_LATENCY_MOVING_AVERAGE_PARAM_BASE)
+
 void notify_prefetch(uint64_t addr, uint64_t cycle);
 
 // Auxiliary latency table functions
@@ -109,7 +114,7 @@ uint64_t latency_table_get_ip(uint64_t line_addr, uint32_t cpu);
 // Shadow cache
 void shadow_cache_init(uint32_t cpu);
 uint8_t shadow_cache_add(uint32_t cpu, uint32_t set, uint32_t way, 
-        uint64_t line_addr, uint8_t pf, uint64_t latency);
+        uint64_t line_addr, uint8_t pf, uint8_t from);
 uint8_t shadow_cache_get(uint32_t cpu, uint64_t line_addr);
 uint8_t shadow_cache_pf(uint32_t cpu, uint64_t line_addr);
 uint8_t shadow_cache_is_pf(uint32_t cpu, uint64_t line_addr);
